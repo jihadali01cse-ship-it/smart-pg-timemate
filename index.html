@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -74,8 +74,8 @@ button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8
 </div>
 
 <script>
-// Replace these two placeholders with your own Supabase details.
-// Never put your Supabase secret/service_role key in this file.
+// Frontend-safe Supabase Project URL and Publishable key.
+// Never put a Supabase secret/service_role key in this file.
 const SUPABASE_URL = "https://mxiouxwmerpnjxyrmzoo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_r_lJ-CUj3ZRMcoiwRRIwMA_uJwjucYL";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -132,16 +132,46 @@ async function loadSession(session,elementId){
   const box=document.getElementById(elementId);
   box.textContent="Loading...";
   const today=new Date().toLocaleDateString("en-CA");
+
   const {data:draws,error}=await db.from("draws").select("id")
-    .eq("draw_date",today).eq("session_type",session).limit(1);
+    .eq("draw_date",today)
+    .eq("session_type",session)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
   if(error){box.textContent=error.message;return;}
-  if(!draws||draws.length===0){box.textContent="No schedule generated yet.";return;}
+  if(!draws || draws.length===0){
+    box.textContent="No schedule generated yet.";
+    return;
+  }
 
   const {data:slots,error:slotError}=await db.from("draw_slots")
-    .select("position,start_time,end_time,members(name)")
-    .eq("draw_id",draws[0].id).order("position");
+    .select("position,start_time,end_time,member_id")
+    .eq("draw_id",draws[0].id)
+    .order("position");
+
   if(slotError){box.textContent=slotError.message;return;}
-  if(!slots||slots.length===0){box.textContent="No slots found.";return;}
+  if(!slots || slots.length===0){
+    box.textContent="No slots found.";
+    return;
+  }
+
+  const memberIds=[...new Set(slots.map(slot=>slot.member_id).filter(Boolean))];
+  if(memberIds.length===0){
+    box.textContent="No members linked to these slots.";
+    return;
+  }
+
+  const {data:members,error:memberError}=await db.from("members")
+    .select("id,name")
+    .in("id",memberIds);
+
+  if(memberError){box.textContent="Member loading error: "+memberError.message;return;}
+
+  const memberMap={};
+  (members || []).forEach(member=>{
+    memberMap[member.id]=member.name;
+  });
 
   box.innerHTML="";
   slots.forEach(slot=>{
@@ -150,9 +180,11 @@ async function loadSession(session,elementId){
     const title=document.createElement("strong");
     title.textContent="Slot "+slot.position;
     const details=document.createElement("div");
-    details.textContent=(slot.members?slot.members.name:"Member")+
+    details.textContent=(memberMap[slot.member_id] || "Member not found")+
       " | "+slot.start_time+" - "+slot.end_time;
-    item.appendChild(title);item.appendChild(details);box.appendChild(item);
+    item.appendChild(title);
+    item.appendChild(details);
+    box.appendChild(item);
   });
 }
 
