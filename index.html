@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart PG TimeMate</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#0b1220;color:white;min-height:100vh;padding:20px}
+.container{max-width:950px;margin:35px auto}
+.brand{text-align:center;margin-bottom:30px}
+.brand h1{color:#60a5fa;font-size:29px}
+.brand p{color:#94a3b8;margin-top:8px}
+.card{background:#172338;border:1px solid #263750;border-radius:15px;padding:25px;margin-bottom:20px}
+h2{margin-bottom:18px} h3{margin-bottom:12px}
+input{width:100%;padding:14px;margin:9px 0;border-radius:8px;border:1px solid #334155;background:#0f1b2e;color:white;font-size:15px}
+button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8px;cursor:pointer;font-size:15px;margin:8px 5px 0 0}
+.logout{background:#dc2626}.hidden{display:none!important}
+.status{color:#93c5fd;margin-top:12px;overflow-wrap:anywhere}
+.muted{color:#94a3b8;font-size:14px;line-height:1.6}
+.schedule{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-top:15px}
+.slot{background:#0f1b2e;border:1px solid #334155;border-radius:10px;padding:15px;margin-bottom:10px;line-height:1.8}
+.slot strong{color:#60a5fa}footer{text-align:center;color:#64748b;padding:20px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="brand">
+    <h1>Smart PG TimeMate</h1>
+    <p>Smart Scheduling &amp; Resident Management System</p>
+  </div>
+
+  <div class="card" id="loginBox">
+    <h2>Welcome Back</h2>
+    <p class="muted">Login to access your PG schedule.</p>
+    <input type="email" id="email" placeholder="Email Address" autocomplete="username">
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    <button onclick="login()">Login</button>
+    <p class="status" id="loginMessage"></p>
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <div class="card">
+      <h2>Dashboard</h2>
+      <p id="welcome" class="muted"></p>
+      <p id="role" class="status"></p>
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card hidden" id="adminPanel">
+      <h2>Admin Control Panel</h2>
+      <p class="muted">Generate a random schedule for active members.</p>
+      <button onclick="generateLottery('morning')">Generate Morning Lottery</button>
+      <button onclick="generateLottery('evening')">Generate Evening Lottery</button>
+      <p class="status" id="adminMessage"></p>
+    </div>
+
+    <div class="card">
+      <h2>PG Settings</h2>
+      <p id="settingsInfo" class="muted">Loading settings...</p>
+    </div>
+
+    <div class="card">
+      <h2>Today's Schedule</h2>
+      <div class="schedule">
+        <div><h3>Morning Session</h3><div id="morningSchedule" class="muted">Loading...</div></div>
+        <div><h3>Evening Session</h3><div id="eveningSchedule" class="muted">Loading...</div></div>
+      </div>
+      <button onclick="loadDashboard()">Refresh Schedule</button>
+    </div>
+  </div>
+  <footer>© 2026 Smart PG TimeMate</footer>
+</div>
+
+<script>
+// Replace these two placeholders with your own Supabase details.
+// Never put your Supabase secret/service_role key in this file.
+const SUPABASE_URL = "https://mxiouxwmerpnjxyrmzoo.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_r_lJ-CUj3ZRMcoiwRRIwMA_uJwjucYL";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const message=document.getElementById("loginMessage");
+  message.textContent="Please wait...";
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){message.textContent=error.message;return;}
+  message.textContent="";
+  await showDashboard(data.user);
+}
+
+async function logout(){
+  await db.auth.signOut();
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("loginBox").classList.remove("hidden");
+}
+
+async function showDashboard(user){
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+  document.getElementById("welcome").textContent="Logged in as: "+user.email;
+
+  const {data:profile,error}=await db.from("profiles")
+    .select("is_admin").eq("id",user.id).single();
+  if(error){
+    document.getElementById("role").textContent="Profile error: "+error.message;
+    return;
+  }
+  const isAdmin=profile.is_admin===true;
+  document.getElementById("role").textContent=
+    isAdmin?"Account Type: Administrator":"Account Type: Member";
+  document.getElementById("adminPanel").classList.toggle("hidden",!isAdmin);
+  await loadDashboard();
+}
+
+async function loadDashboard(){
+  const {data:settings,error}=await db.from("app_settings")
+    .select("*").eq("id",1).single();
+  document.getElementById("settingsInfo").textContent=error
+    ?"Settings error: "+error.message
+    :"Active members: "+settings.total_members+
+     " | Slot duration: "+settings.slot_duration_minutes+
+     " minutes | Morning: "+settings.morning_start+
+     " | Evening: "+settings.evening_start;
+  await loadSession("morning","morningSchedule");
+  await loadSession("evening","eveningSchedule");
+}
+
+async function loadSession(session,elementId){
+  const box=document.getElementById(elementId);
+  box.textContent="Loading...";
+  const today=new Date().toLocaleDateString("en-CA");
+  const {data:draws,error}=await db.from("draws").select("id")
+    .eq("draw_date",today).eq("session_type",session).limit(1);
+  if(error){box.textContent=error.message;return;}
+  if(!draws||draws.length===0){box.textContent="No schedule generated yet.";return;}
+
+  const {data:slots,error:slotError}=await db.from("draw_slots")
+    .select("position,start_time,end_time,members(name)")
+    .eq("draw_id",draws[0].id).order("position");
+  if(slotError){box.textContent=slotError.message;return;}
+  if(!slots||slots.length===0){box.textContent="No slots found.";return;}
+
+  box.innerHTML="";
+  slots.forEach(slot=>{
+    const item=document.createElement("div");
+    item.className="slot";
+    const title=document.createElement("strong");
+    title.textContent="Slot "+slot.position;
+    const details=document.createElement("div");
+    details.textContent=(slot.members?slot.members.name:"Member")+
+      " | "+slot.start_time+" - "+slot.end_time;
+    item.appendChild(title);item.appendChild(details);box.appendChild(item);
+  });
+}
+
+async function generateLottery(session){
+  const message=document.getElementById("adminMessage");
+  message.textContent="Generating lottery...";
+  const {error}=await db.rpc("generate_lottery",{
+    p_session:session,p_draw_date:new Date().toLocaleDateString("en-CA")
+  });
+  if(error){message.textContent="Error: "+error.message;return;}
+  message.textContent=session+" lottery generated successfully!";
+  await loadDashboard();
+}
+
+async function checkLogin(){
+  const {data}=await db.auth.getSession();
+  if(data.session) await showDashboard(data.session.user);
+}
+checkLogin();
+</script>
+</body>
+</html>
