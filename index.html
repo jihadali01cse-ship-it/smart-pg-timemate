@@ -51,8 +51,8 @@ button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8
     <div class="card hidden" id="adminPanel">
       <h2>Admin Control Panel</h2>
       <p class="muted">Generate a random schedule for active members.</p>
-      <button onclick="generateLottery('morning')">Generate Morning Lottery</button>
-      <button onclick="generateLottery('evening')">Generate Evening Lottery</button>
+      <button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
+      <button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
       <p class="status" id="adminMessage"></p>
     </div>
 
@@ -79,6 +79,15 @@ button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8
 const SUPABASE_URL = "https://mxiouxwmerpnjxyrmzoo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_r_lJ-CUj3ZRMcoiwRRIwMA_uJwjucYL";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Always create a YYYY-MM-DD date using the browser's local calendar date.
+function getLocalDateISO(){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth()+1).padStart(2,"0");
+  const day = String(now.getDate()).padStart(2,"0");
+  return `${year}-${month}-${day}`;
+}
 
 async function login(){
   const email=document.getElementById("email").value.trim();
@@ -124,24 +133,34 @@ async function loadDashboard(){
      " | Slot duration: "+settings.slot_duration_minutes+
      " minutes | Morning: "+settings.morning_start+
      " | Evening: "+settings.evening_start;
-  await loadSession("morning","morningSchedule");
-  await loadSession("evening","eveningSchedule");
+
+  await Promise.all([
+    loadSession("morning","morningSchedule"),
+    loadSession("evening","eveningSchedule")
+  ]);
 }
 
 async function loadSession(session,elementId){
   const box=document.getElementById(elementId);
   box.textContent="Loading...";
-  const today=new Date().toLocaleDateString("en-CA");
+  const today=getLocalDateISO();
 
-  const {data:draws,error}=await db.from("draws").select("id")
+  const {data:draws,error}=await db.from("draws")
+    .select("id,session_type,draw_date,created_at")
     .eq("draw_date",today)
     .eq("session_type",session)
     .order("created_at",{ascending:false})
     .limit(1);
 
-  if(error){box.textContent=error.message;return;}
+  if(error){box.textContent="Draw loading error: "+error.message;return;}
   if(!draws || draws.length===0){
     box.textContent="No schedule generated yet.";
+    return;
+  }
+
+  // Safety check: never display a draw belonging to the other session.
+  if(draws[0].session_type!==session){
+    box.textContent="Session mismatch. Please contact the administrator.";
     return;
   }
 
@@ -190,13 +209,38 @@ async function loadSession(session,elementId){
 
 async function generateLottery(session){
   const message=document.getElementById("adminMessage");
-  message.textContent="Generating lottery...";
-  const {error}=await db.rpc("generate_lottery",{
-    p_session:session,p_draw_date:new Date().toLocaleDateString("en-CA")
-  });
-  if(error){message.textContent="Error: "+error.message;return;}
-  message.textContent=session+" lottery generated successfully!";
-  await loadDashboard();
+  const morningButton=document.getElementById("morningGenerateButton");
+  const eveningButton=document.getElementById("eveningGenerateButton");
+  const button=session==="morning"?morningButton:eveningButton;
+
+  message.textContent="Generating "+session+" lottery...";
+  button.disabled=true;
+
+  try{
+    const {error}=await db.rpc("generate_lottery",{
+      p_session:session,
+      p_draw_date:getLocalDateISO()
+    });
+
+    if(error){
+      message.textContent="Error: "+error.message;
+      return;
+    }
+
+    message.textContent=session+" lottery generated successfully!";
+
+    // Refresh ONLY the session that was just generated.
+    // The other session and its previous schedule are left untouched.
+    if(session==="morning"){
+      await loadSession("morning","morningSchedule");
+    }else if(session==="evening"){
+      await loadSession("evening","eveningSchedule");
+    }
+  }catch(err){
+    message.textContent="Error: "+(err.message || String(err));
+  }finally{
+    button.disabled=false;
+  }
 }
 
 async function checkLogin(){
