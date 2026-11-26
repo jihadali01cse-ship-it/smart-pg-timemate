@@ -67,7 +67,8 @@ button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8
         <div><h3>Morning Session</h3><div id="morningSchedule" class="muted">Loading...</div></div>
         <div><h3>Evening Session</h3><div id="eveningSchedule" class="muted">Loading...</div></div>
       </div>
-      <button onclick="loadDashboard()">Refresh Schedule</button>
+      <button onclick="loadSession('morning','morningSchedule')">Refresh Morning</button>
+      <button onclick="loadSession('evening','eveningSchedule')">Refresh Evening</button>
     </div>
   </div>
   <footer>© 2026 Smart PG TimeMate</footer>
