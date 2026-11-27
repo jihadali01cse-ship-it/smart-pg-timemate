@@ -146,6 +146,28 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <div class="card hidden" id="adminPanel">
 <h2>Admin Control Panel</h2>
 <p class="muted">Manage your PG schedule and members.</p>
+ <hr>
+<h3>Add New Member</h3>
+
+<input
+  type="text"
+  id="newMemberName"
+  placeholder="Enter Member Name"
+>
+
+<input
+  type="text"
+  id="newMemberRoom"
+  placeholder="Enter Room Number"
+>
+
+<button onclick="addNewMember()">
+  Add Member
+</button>
+
+<p id="addMemberMessage" class="status"></p>
+
+<hr>
 <button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
 <button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
 <p class="status" id="adminMessage"></p>
