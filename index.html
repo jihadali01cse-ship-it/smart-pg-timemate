@@ -535,7 +535,8 @@ async function approveRegistration(registrationId,memberId){
  }
 
  alert("Member approved and linked successfully!");
- await loadRegistrations();
+await loadRegistrations();
+await loadApprovedMembers();
 }
 
 // REJECT
