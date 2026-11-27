@@ -182,6 +182,50 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <p id="addMemberMessage" class="status"></p>
 
 <hr>
+ <!-- TIME MANAGEMENT SETTINGS -->
+<div class="card" id="timeManagementSettings">
+
+  <h2>Time Management Settings</h2>
+  <p class="muted">Configure Morning and Evening schedules</p>
+
+  <hr style="margin:15px 0;">
+
+  <h3>Morning Session</h3>
+
+  <label>Total Time (Minutes)</label>
+  <input type="number" id="morningTotalMinutes"
+         min="1" value="160">
+
+  <label>Scheduling Mode</label>
+  <select id="morningMode">
+    <option value="lottery">Lottery Mode</option>
+    <option value="automatic">Automatic Mode</option>
+    <option value="manual">Manual Mode</option>
+  </select>
+
+  <hr style="margin:15px 0;">
+
+  <h3>Evening Session</h3>
+
+  <label>Total Time (Minutes)</label>
+  <input type="number" id="eveningTotalMinutes"
+         min="1" value="160">
+
+  <label>Scheduling Mode</label>
+  <select id="eveningMode">
+    <option value="lottery">Lottery Mode</option>
+    <option value="automatic">Automatic Mode</option>
+    <option value="manual">Manual Mode</option>
+  </select>
+
+  <button onclick="saveTimeManagementSettings()">
+    Save Time Settings
+  </button>
+
+  <p id="timeSettingsMessage" class="status"></p>
+
+</div>
+<!-- END TIME MANAGEMENT SETTINGS -->
 <button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
 <button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
 <p class="status" id="adminMessage"></p>
@@ -641,6 +685,53 @@ async function addNewMember(){
  roomInput.value="";
 
  await loadApprovedMembers();
+}
+ // SAVE TIME MANAGEMENT SETTINGS
+async function saveTimeManagementSettings(){
+ if(!currentIsAdmin)return;
+
+ const morningTotal=Number(
+  document.getElementById("morningTotalMinutes").value
+ );
+
+ const eveningTotal=Number(
+  document.getElementById("eveningTotalMinutes").value
+ );
+
+ const morningMode=
+  document.getElementById("morningMode").value;
+
+ const eveningMode=
+  document.getElementById("eveningMode").value;
+
+ const message=
+  document.getElementById("timeSettingsMessage");
+
+ if(!Number.isInteger(morningTotal)||morningTotal<=0||
+    !Number.isInteger(eveningTotal)||eveningTotal<=0){
+  message.textContent="Enter valid total minutes.";
+  return;
+ }
+
+ message.textContent="Saving settings...";
+
+ const {error}=await db.from("app_settings")
+  .update({
+   morning_total_minutes:morningTotal,
+   evening_total_minutes:eveningTotal,
+   morning_mode:morningMode,
+   evening_mode:eveningMode
+  })
+  .eq("id",1);
+
+ if(error){
+  message.textContent="Save error: "+error.message;
+  return;
+ }
+
+ message.textContent="Time settings saved successfully!";
+
+ await loadDashboard();
 }
  // LOAD APPROVED MEMBERS (ADMIN ONLY)
 async function loadApprovedMembers(){
