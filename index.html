@@ -819,24 +819,68 @@ async function loadApprovedMembers(){
  }
 }
 
-// LOAD DASHBOARD
-async function loadDashboard(){
- const {data:settings,error}=await db.from("app_settings")
-  .select("*").eq("id",1).single();
+ // LOAD DASHBOARD
+async function loadDashboard() {
+  const { data: settings, error } = await db
+    .from("app_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
 
- document.getElementById("settingsInfo").textContent=error
-  ?"Settings error: "+error.message
-  :"Active members: "+settings.total_members+
-   " | Slot duration: "+settings.slot_duration_minutes+
-   " minutes | Morning: "+settings.morning_start+
-   " | Evening: "+settings.evening_start;
+  const info = document.getElementById("settingsInfo");
 
- await Promise.all([
-  loadSession("morning","morningSchedule"),
-  loadSession("evening","eveningSchedule")
- ]);
+  if (error) {
+    info.textContent = "Settings error: " + error.message;
+    return;
+  }
+
+  const { count: memberCount, error: memberError } = await db
+    .from("members")
+    .select("*", { count: "exact", head: true })
+    .eq("active", true);
+
+  if (memberError) {
+    info.textContent = "Member count error: " + memberError.message;
+    return;
+  }
+
+  const morningMinutes =
+    Number(settings.morning_total_minutes);
+
+  const eveningMinutes =
+    Number(settings.evening_total_minutes);
+
+  const morningDuration =
+    memberCount > 0 && morningMinutes % memberCount === 0
+      ? morningMinutes / memberCount
+      : "Not equally divisible";
+
+  const eveningDuration =
+    memberCount > 0 && eveningMinutes % memberCount === 0
+      ? eveningMinutes / memberCount
+      : "Not equally divisible";
+
+  info.innerHTML = `
+    <b>Active Members:</b> ${memberCount}<br><br>
+
+    <b>Morning Session</b><br>
+    Start: ${settings.morning_start}<br>
+    End: ${settings.morning_end}<br>
+    Total: ${morningMinutes} minutes<br>
+    Each Member: ${morningDuration} minutes<br><br>
+
+    <b>Evening Session</b><br>
+    Start: ${settings.evening_start}<br>
+    End: ${settings.evening_end}<br>
+    Total: ${eveningMinutes} minutes<br>
+    Each Member: ${eveningDuration} minutes
+  `;
+
+  await Promise.all([
+    loadSession("morning", "morningSchedule"),
+    loadSession("evening", "eveningSchedule")
+  ]);
 }
-
 // LOAD SESSION
 async function loadSession(session,elementId){
  const box=document.getElementById(elementId);
