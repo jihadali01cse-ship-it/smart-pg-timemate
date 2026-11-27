@@ -391,23 +391,34 @@ async function login(){
  await showDashboard(data.user);
 }
 
-// PASSWORD RESET
-async function forgotPassword(){
- const email=document.getElementById("loginEmail").value.trim();
- const message=document.getElementById("loginMessage");
+ // PASSWORD RESET
+async function forgotPassword() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const message = document.getElementById("loginMessage");
 
- if(!email){
-  message.textContent="Enter your Gmail address first.";
-  return;
- }
+  if (!email) {
+    message.textContent = "Please enter your Gmail address first.";
+    return;
+  }
 
- const {error}=await db.auth.resetPasswordForEmail(email,{
-  redirectTo:window.location.origin
- });
+  message.textContent = "Sending reset link...";
 
- message.textContent=error?error.message:"Password reset link sent. Check your Gmail.";
+  try {
+    const { data, error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+
+    if (error) {
+      message.textContent = "Password reset error: " + error.message;
+      return;
+    }
+
+    message.textContent =
+      "Reset request sent. Please check Inbox and Spam.";
+  } catch (err) {
+    message.textContent = "Error: " + err.message;
+  }
 }
-
  // DASHBOARD / ROLE CHECK
 async function showDashboard(user){
  currentUser=user;
