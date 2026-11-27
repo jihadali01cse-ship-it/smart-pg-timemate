@@ -154,6 +154,17 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <p class="muted">Approve or reject verified member registrations.</p>
 <button class="secondary" onclick="loadRegistrations()">Refresh Requests</button>
 <div id="registrationList" class="muted">Loading...</div>
+ <hr style="margin:20px 0;">
+
+<h3>Approved Members</h3>
+
+<button onclick="loadApprovedMembers()">
+  Refresh Approved Members
+</button>
+
+<div id="approvedMembersList" style="margin-top:15px;">
+  Loading approved members...
+</div>
 </div>
 
 <div class="card">
