@@ -700,51 +700,62 @@ async function addNewMember(){
  await loadApprovedMembers();
 }
  // SAVE TIME MANAGEMENT SETTINGS
-async function saveTimeManagementSettings(){
- if(!currentIsAdmin)return;
+async function saveTimeManagementSettings() {
+  if (!currentIsAdmin) return;
 
- const morningTotal=Number(
-  document.getElementById("morningTotalMinutes").value
- );
+  const morningStart = document.getElementById("morningStartTime").value;
+  const morningEnd = document.getElementById("morningEndTime").value;
+  const eveningStart = document.getElementById("eveningStartTime").value;
+  const eveningEnd = document.getElementById("eveningEndTime").value;
 
- const eveningTotal=Number(
-  document.getElementById("eveningTotalMinutes").value
- );
+  const morningMode = document.getElementById("morningMode").value;
+  const eveningMode = document.getElementById("eveningMode").value;
 
- const morningMode=
-  document.getElementById("morningMode").value;
+  const message = document.getElementById("timeSettingsMessage");
 
- const eveningMode=
-  document.getElementById("eveningMode").value;
+  function getMinutes(start, end) {
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }
 
- const message=
-  document.getElementById("timeSettingsMessage");
+  if (!morningStart || !morningEnd || !eveningStart || !eveningEnd) {
+    message.textContent = "Please enter all start and end times.";
+    return;
+  }
 
- if(!Number.isInteger(morningTotal)||morningTotal<=0||
-    !Number.isInteger(eveningTotal)||eveningTotal<=0){
-  message.textContent="Enter valid total minutes.";
-  return;
- }
+  const morningTotal = getMinutes(morningStart, morningEnd);
+  const eveningTotal = getMinutes(eveningStart, eveningEnd);
 
- message.textContent="Saving settings...";
+  if (morningTotal <= 0 || eveningTotal <= 0) {
+    message.textContent = "End time must be after start time.";
+    return;
+  }
 
- const {error}=await db.from("app_settings")
-  .update({
-   morning_total_minutes:morningTotal,
-   evening_total_minutes:eveningTotal,
-   morning_mode:morningMode,
-   evening_mode:eveningMode
-  })
-  .eq("id",1);
+  message.textContent = "Saving settings...";
 
- if(error){
-  message.textContent="Save error: "+error.message;
-  return;
- }
+  const { error } = await db.from("app_settings")
+    .update({
+      morning_start: morningStart,
+      morning_end: morningEnd,
+      morning_total_minutes: morningTotal,
+      morning_mode: morningMode,
 
- message.textContent="Time settings saved successfully!";
+      evening_start: eveningStart,
+      evening_end: eveningEnd,
+      evening_total_minutes: eveningTotal,
+      evening_mode: eveningMode
+    })
+    .eq("id", 1);
 
- await loadDashboard();
+  if (error) {
+    message.textContent = "Save error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Time settings saved successfully!";
+
+  await loadDashboard();
 }
  // LOAD APPROVED MEMBERS (ADMIN ONLY)
 async function loadApprovedMembers(){
