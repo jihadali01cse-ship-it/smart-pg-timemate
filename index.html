@@ -7,248 +7,668 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-body{background:#0b1220;color:white;min-height:100vh;padding:20px}
-.container{max-width:950px;margin:35px auto}
-.brand{text-align:center;margin-bottom:30px}
+body{background:#0b1220;color:white;min-height:100vh;padding:15px}
+.container{max-width:1000px;margin:25px auto}
+.brand{text-align:center;margin-bottom:25px}
 .brand h1{color:#60a5fa;font-size:29px}
-.brand p{color:#94a3b8;margin-top:8px}
-.card{background:#172338;border:1px solid #263750;border-radius:15px;padding:25px;margin-bottom:20px}
-h2{margin-bottom:18px} h3{margin-bottom:12px}
-input{width:100%;padding:14px;margin:9px 0;border-radius:8px;border:1px solid #334155;background:#0f1b2e;color:white;font-size:15px}
-button{padding:13px 20px;background:#2563eb;border:0;color:white;border-radius:8px;cursor:pointer;font-size:15px;margin:8px 5px 0 0}
-.logout{background:#dc2626}.hidden{display:none!important}
-.status{color:#93c5fd;margin-top:12px;overflow-wrap:anywhere}
-.muted{color:#94a3b8;font-size:14px;line-height:1.6}
-.schedule{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-top:15px}
-.slot{background:#0f1b2e;border:1px solid #334155;border-radius:10px;padding:15px;margin-bottom:10px;line-height:1.8}
-.slot strong{color:#60a5fa}footer{text-align:center;color:#64748b;padding:20px}
+.brand p,.muted{color:#94a3b8;line-height:1.6;font-size:14px}
+.card{background:#172338;border:1px solid #263750;border-radius:15px;padding:22px;margin-bottom:18px}
+h2{margin-bottom:15px;font-size:22px}
+h3{margin:12px 0}
+input,select{width:100%;padding:13px;margin:8px 0;border-radius:8px;border:1px solid #334155;background:#0f1b2e;color:white;font-size:15px}
+input[type=file]{padding:10px}
+button{padding:12px 17px;background:#2563eb;border:0;color:white;border-radius:8px;cursor:pointer;font-size:14px;margin:7px 5px 0 0}
+button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#475569}
+.danger{background:#dc2626}
+.success{background:#15803d}
+.hidden{display:none!important}
+.status{color:#93c5fd;margin-top:12px;overflow-wrap:anywhere;line-height:1.6}
+.schedule{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px;margin-top:15px}
+.slot{background:#0f1b2e;border:1px solid #334155;border-radius:10px;padding:14px;margin:9px 0;line-height:1.8}
+.slot strong{color:#60a5fa}
+.photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #60a5fa;background:#263750}
+.photoWrap{text-align:center;margin:8px 0 18px}
+.regItem{background:#0f1b2e;border:1px solid #334155;border-radius:10px;padding:15px;margin:12px 0}
+footer{text-align:center;color:#64748b;padding:20px}
+label{display:block;color:#cbd5e1;margin-top:9px;font-size:14px}
+hr{border:0;border-top:1px solid #334155;margin:17px 0}
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="brand">
-    <h1>Smart PG TimeMate</h1>
-    <p>Smart Scheduling &amp; Resident Management System</p>
-  </div>
 
-  <div class="card" id="loginBox">
-    <h2>Welcome Back</h2>
-    <p class="muted">Login to access your PG schedule.</p>
-    <input type="email" id="email" placeholder="Email Address" autocomplete="username">
-    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
-    <button onclick="login()">Login</button>
-    <p class="status" id="loginMessage"></p>
-  </div>
+<div class="brand">
+<h1>Smart PG TimeMate</h1>
+<p>Smart Scheduling &amp; Resident Management System</p>
+</div>
 
-  <div id="dashboard" class="hidden">
-    <div class="card">
-      <h2>Dashboard</h2>
-      <p id="welcome" class="muted"></p>
-      <p id="role" class="status"></p>
-      <button class="logout" onclick="logout()">Logout</button>
-    </div>
+<!-- LOGIN -->
+<div class="card" id="loginBox">
+<h2>Welcome Back</h2>
+<p class="muted">Login with your own Gmail and password.</p>
+<input type="email" id="loginEmail" placeholder="Gmail Address">
+<input type="password" id="loginPassword" placeholder="Password">
+<button onclick="login()">Login</button>
+<button class="secondary" onclick="showRegister()">Create Account</button>
+<button class="secondary" onclick="forgotPassword()">Forgot Password?</button>
+<p class="status" id="loginMessage"></p>
+</div>
 
-    <div class="card hidden" id="adminPanel">
-      <h2>Admin Control Panel</h2>
-      <p class="muted">Generate a random schedule for active members.</p>
-      <button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
-      <button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
-      <p class="status" id="adminMessage"></p>
-    </div>
+<!-- REGISTRATION -->
+<div class="card hidden" id="registerBox">
+<h2>Create Member Account</h2>
+<p class="muted">Register with your own Gmail address.</p>
 
-    <div class="card">
-      <h2>PG Settings</h2>
-      <p id="settingsInfo" class="muted">Loading settings...</p>
-    </div>
+<div class="photoWrap">
+<img id="registerPhotoPreview" class="photo"
+src="https://placehold.co/110x110/263750/ffffff?text=Photo">
+<label>Upload Profile Photo</label>
+<input type="file" id="registerPhoto" accept="image/*">
+<p class="muted">Photo upload will be available after email verification and login.</p>
+</div>
 
-    <div class="card">
-      <h2>Today's Schedule</h2>
-      <div class="schedule">
-        <div><h3>Morning Session</h3><div id="morningSchedule" class="muted">Loading...</div></div>
-        <div><h3>Evening Session</h3><div id="eveningSchedule" class="muted">Loading...</div></div>
-      </div>
-      <button onclick="loadSession('morning','morningSchedule')">Refresh Morning</button>
-      <button onclick="loadSession('evening','eveningSchedule')">Refresh Evening</button>
-    </div>
-  </div>
-  <footer>© 2026 Smart PG TimeMate</footer>
+<label>Full Name *</label>
+<input id="regName" type="text" placeholder="Enter your full name">
+
+<label>Gmail Address *</label>
+<input id="regEmail" type="email" placeholder="Enter your Gmail address">
+
+<label>Mobile Number</label>
+<input id="regMobile" type="tel" placeholder="Enter mobile number">
+
+<label>Room Number</label>
+<input id="regRoom" type="text" placeholder="Enter room number">
+
+<label>Password *</label>
+<input id="regPassword" type="password" placeholder="Create password">
+
+<label>Confirm Password *</label>
+<input id="regConfirmPassword" type="password" placeholder="Confirm password">
+
+<button onclick="registerMember()">Register Account</button>
+<button class="secondary" onclick="showLogin()">Back to Login</button>
+<p class="status" id="registerMessage"></p>
+</div>
+
+<!-- EMAIL / APPROVAL STATUS -->
+<div class="card hidden" id="pendingBox">
+<h2>Registration Status</h2>
+<p id="pendingMessage" class="status"></p>
+
+<div id="photoUploadArea" class="hidden">
+<hr>
+<h3>Upload Profile Photo</h3>
+<p class="muted">Choose your profile photo. It will be visible to the Admin.</p>
+<input type="file" id="memberPhoto" accept="image/*">
+<button onclick="uploadMemberPhoto()">Upload Photo</button>
+<p class="status" id="photoMessage"></p>
+</div>
+
+<button class="logout danger" onclick="logout()">Logout</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+
+<div class="card">
+<h2>Dashboard</h2>
+<p id="welcome" class="muted"></p>
+<p id="role" class="status"></p>
+<button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<!-- ADMIN -->
+<div class="card hidden" id="adminPanel">
+<h2>Admin Control Panel</h2>
+<p class="muted">Manage your PG schedule and members.</p>
+<button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
+<button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
+<p class="status" id="adminMessage"></p>
+<hr>
+<h3>Member Registration Requests</h3>
+<p class="muted">Approve or reject verified member registrations.</p>
+<button class="secondary" onclick="loadRegistrations()">Refresh Requests</button>
+<div id="registrationList" class="muted">Loading...</div>
+</div>
+
+<div class="card">
+<h2>PG Settings</h2>
+<p id="settingsInfo" class="muted">Loading settings...</p>
+</div>
+
+<div class="card">
+<h2>Today's Schedule</h2>
+<div class="schedule">
+<div>
+<h3>Morning Session</h3>
+<div id="morningSchedule" class="muted">Loading...</div>
+<button onclick="loadSession('morning','morningSchedule')">Refresh Morning</button>
+</div>
+<div>
+<h3>Evening Session</h3>
+<div id="eveningSchedule" class="muted">Loading...</div>
+<button onclick="loadSession('evening','eveningSchedule')">Refresh Evening</button>
+</div>
+</div>
+</div>
+</div>
+
+<footer>© 2026 Smart PG TimeMate</footer>
 </div>
 
 <script>
-// Frontend-safe Supabase Project URL and Publishable key.
-// Never put a Supabase secret/service_role key in this file.
+// Supabase configuration
 const SUPABASE_URL = "https://mxiouxwmerpnjxyrmzoo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_r_lJ-CUj3ZRMcoiwRRIwMA_uJwjucYL";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// Always create a YYYY-MM-DD date using the browser's local calendar date.
+let currentUser = null;
+let currentIsAdmin = false;
+
 function getLocalDateISO(){
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth()+1).padStart(2,"0");
-  const day = String(now.getDate()).padStart(2,"0");
-  return `${year}-${month}-${day}`;
+ const now=new Date();
+ return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
 }
 
+function showLogin(){
+ document.getElementById("loginBox").classList.remove("hidden");
+ document.getElementById("registerBox").classList.add("hidden");
+ document.getElementById("pendingBox").classList.add("hidden");
+ document.getElementById("dashboard").classList.add("hidden");
+}
+
+function showRegister(){
+ document.getElementById("loginBox").classList.add("hidden");
+ document.getElementById("registerBox").classList.remove("hidden");
+ document.getElementById("pendingBox").classList.add("hidden");
+}
+
+function hideAll(){
+ ["loginBox","registerBox","pendingBox","dashboard"].forEach(id=>
+  document.getElementById(id).classList.add("hidden")
+ );
+}
+
+document.getElementById("registerPhoto").addEventListener("change",function(){
+ const file=this.files[0];
+ if(file){
+  document.getElementById("registerPhotoPreview").src=URL.createObjectURL(file);
+ }
+});
+
+// REGISTER
+async function registerMember(){
+ const name=document.getElementById("regName").value.trim();
+ const email=document.getElementById("regEmail").value.trim();
+ const mobile=document.getElementById("regMobile").value.trim();
+ const room=document.getElementById("regRoom").value.trim();
+ const password=document.getElementById("regPassword").value;
+ const confirm=document.getElementById("regConfirmPassword").value;
+ const message=document.getElementById("registerMessage");
+
+ if(!name||!email||!password||!confirm){
+  message.textContent="Please fill in all required fields.";
+  return;
+ }
+ if(password.length<8){
+  message.textContent="Password must contain at least 8 characters.";
+  return;
+ }
+ if(password!==confirm){
+  message.textContent="Passwords do not match.";
+  return;
+ }
+
+ message.textContent="Creating your account...";
+
+ const {data,error}=await db.auth.signUp({
+  email,
+  password,
+  options:{
+   emailRedirectTo:window.location.origin,
+   data:{
+    full_name:name,
+    mobile_number:mobile,
+    room_number:room
+   }
+  }
+ });
+
+ if(error){
+  message.textContent="Registration error: "+error.message;
+  return;
+ }
+
+ message.textContent=
+  "Registration submitted. Please check your Gmail and click the verification link. After verification, login to upload your photo and wait for Admin approval.";
+
+ document.getElementById("regPassword").value="";
+ document.getElementById("regConfirmPassword").value="";
+}
+
+// LOGIN
 async function login(){
-  const email=document.getElementById("email").value.trim();
-  const password=document.getElementById("password").value;
-  const message=document.getElementById("loginMessage");
-  message.textContent="Please wait...";
-  const {data,error}=await db.auth.signInWithPassword({email,password});
-  if(error){message.textContent=error.message;return;}
-  message.textContent="";
-  await showDashboard(data.user);
+ const email=document.getElementById("loginEmail").value.trim();
+ const password=document.getElementById("loginPassword").value;
+ const message=document.getElementById("loginMessage");
+
+ message.textContent="Please wait...";
+ const {data,error}=await db.auth.signInWithPassword({email,password});
+
+ if(error){
+  message.textContent=error.message;
+  return;
+ }
+ await showDashboard(data.user);
 }
 
-async function logout(){
-  await db.auth.signOut();
-  document.getElementById("dashboard").classList.add("hidden");
-  document.getElementById("loginBox").classList.remove("hidden");
+// PASSWORD RESET
+async function forgotPassword(){
+ const email=document.getElementById("loginEmail").value.trim();
+ const message=document.getElementById("loginMessage");
+
+ if(!email){
+  message.textContent="Enter your Gmail address first.";
+  return;
+ }
+
+ const {error}=await db.auth.resetPasswordForEmail(email,{
+  redirectTo:window.location.origin
+ });
+
+ message.textContent=error?error.message:"Password reset link sent. Check your Gmail.";
 }
 
+// DASHBOARD / ROLE CHECK
 async function showDashboard(user){
-  document.getElementById("loginBox").classList.add("hidden");
+ currentUser=user;
+ hideAll();
+
+ document.getElementById("welcome").textContent="Logged in as: "+user.email;
+
+ const {data:profile,error}=await db.from("profiles")
+  .select("is_admin").eq("id",user.id).single();
+
+ if(error){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Profile error: "+error.message;
+  return;
+ }
+
+ currentIsAdmin=profile.is_admin===true;
+
+ if(currentIsAdmin){
   document.getElementById("dashboard").classList.remove("hidden");
-  document.getElementById("welcome").textContent="Logged in as: "+user.email;
-
-  const {data:profile,error}=await db.from("profiles")
-    .select("is_admin").eq("id",user.id).single();
-  if(error){
-    document.getElementById("role").textContent="Profile error: "+error.message;
-    return;
-  }
-  const isAdmin=profile.is_admin===true;
-  document.getElementById("role").textContent=
-    isAdmin?"Account Type: Administrator":"Account Type: Member";
-  document.getElementById("adminPanel").classList.toggle("hidden",!isAdmin);
+  document.getElementById("role").textContent="Account Type: Administrator";
+  document.getElementById("adminPanel").classList.remove("hidden");
   await loadDashboard();
+  await loadRegistrations();
+  return;
+ }
+
+ const {data:registration,error:regError}=await db.from("member_registrations")
+  .select("id,status,photo_url")
+  .eq("user_id",user.id)
+  .maybeSingle();
+
+ if(regError){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Registration status error: "+regError.message;
+  return;
+ }
+
+ if(!registration){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Your email may not be verified yet, or your registration request is not available. Please verify your Gmail and login again.";
+  return;
+ }
+
+ if(registration.status==="pending"){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Your Gmail is verified. Your registration is waiting for Admin approval.";
+
+  document.getElementById("photoUploadArea").classList.remove("hidden");
+  return;
+ }
+
+ if(registration.status==="rejected"){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Your registration was not approved. Please contact the Admin.";
+  return;
+ }
+
+ if(registration.status!=="approved"){
+  document.getElementById("pendingBox").classList.remove("hidden");
+  document.getElementById("pendingMessage").textContent=
+   "Your account is not approved yet.";
+  return;
+ }
+
+ document.getElementById("dashboard").classList.remove("hidden");
+ document.getElementById("role").textContent="Account Type: Member";
+ document.getElementById("adminPanel").classList.add("hidden");
+ await loadDashboard();
 }
 
+// PHOTO UPLOAD
+async function uploadMemberPhoto(){
+ const file=document.getElementById("memberPhoto").files[0];
+ const message=document.getElementById("photoMessage");
+
+ if(!file){
+  message.textContent="Please choose a photo first.";
+  return;
+ }
+ if(!file.type.startsWith("image/")){
+  message.textContent="Please select an image file.";
+  return;
+ }
+ if(file.size>5*1024*1024){
+  message.textContent="Image must be smaller than 5 MB.";
+  return;
+ }
+
+ message.textContent="Uploading photo...";
+
+ const extension=file.name.split(".").pop().toLowerCase();
+ const path=currentUser.id+"/"+Date.now()+"."+extension;
+
+ const {error:uploadError}=await db.storage
+  .from("member-photos")
+  .upload(path,file,{contentType:file.type,upsert:false});
+
+ if(uploadError){
+  message.textContent="Upload error: "+uploadError.message;
+  return;
+ }
+
+ const {error:updateError}=await db.from("member_registrations")
+  .update({photo_url:path})
+  .eq("user_id",currentUser.id)
+  .eq("status","pending");
+
+ if(updateError){
+  message.textContent="Photo uploaded, but profile update failed: "+updateError.message;
+  return;
+ }
+
+ message.textContent="Profile photo uploaded successfully!";
+}
+
+// ADMIN REGISTRATION LIST
+async function loadRegistrations(){
+ if(!currentIsAdmin)return;
+
+ const box=document.getElementById("registrationList");
+ box.textContent="Loading requests...";
+
+ const {data:requests,error}=await db.from("member_registrations")
+  .select("id,user_id,full_name,mobile_number,room_number,photo_url,created_at")
+  .eq("status","pending")
+  .order("created_at",{ascending:true});
+
+ if(error){
+  box.textContent="Error loading requests: "+error.message;
+  return;
+ }
+
+ if(!requests||requests.length===0){
+  box.textContent="No pending registration requests.";
+  return;
+ }
+
+ const {data:members,error:memberError}=await db.from("members")
+  .select("id,name,user_id")
+  .is("user_id",null)
+  .eq("active",true);
+
+ if(memberError){
+  box.textContent="Member list error: "+memberError.message;
+  return;
+ }
+
+ box.innerHTML="";
+
+ for(const request of requests){
+  const item=document.createElement("div");
+  item.className="regItem";
+
+  const heading=document.createElement("h3");
+  heading.textContent=request.full_name;
+  item.appendChild(heading);
+
+  const details=document.createElement("p");
+  details.className="muted";
+  details.textContent=
+   "Mobile: "+(request.mobile_number||"Not provided")+
+   " | Room: "+(request.room_number||"Not provided");
+  item.appendChild(details);
+
+  if(request.photo_url){
+   const {data:signed,error:signedError}=await db.storage
+    .from("member-photos")
+    .createSignedUrl(request.photo_url,3600);
+
+   if(!signedError&&signed?.signedUrl){
+    const img=document.createElement("img");
+    img.src=signed.signedUrl;
+    img.className="photo";
+    img.style.marginTop="10px";
+    item.appendChild(img);
+   }
+  }
+
+  const select=document.createElement("select");
+  const placeholder=document.createElement("option");
+  placeholder.value="";
+  placeholder.textContent="Select existing PG member";
+  select.appendChild(placeholder);
+
+  (members||[]).forEach(member=>{
+   const option=document.createElement("option");
+   option.value=member.id;
+   option.textContent=member.name;
+   select.appendChild(option);
+  });
+
+  item.appendChild(select);
+
+  const approve=document.createElement("button");
+  approve.textContent="Approve & Link";
+  approve.onclick=()=>approveRegistration(request.id,select.value);
+  item.appendChild(approve);
+
+  const reject=document.createElement("button");
+  reject.textContent="Reject";
+  reject.className="danger";
+  reject.onclick=()=>rejectRegistration(request.id);
+  item.appendChild(reject);
+
+  box.appendChild(item);
+ }
+}
+
+// APPROVE
+async function approveRegistration(registrationId,memberId){
+ if(!memberId){
+  alert("Please select an existing PG member first.");
+  return;
+ }
+
+ if(!confirm("Approve this registration and link the selected member?"))return;
+
+ const {error}=await db.rpc("admin_approve_registration",{
+  p_registration_id:registrationId,
+  p_member_id:memberId
+ });
+
+ if(error){
+  alert("Approval error: "+error.message);
+  return;
+ }
+
+ alert("Member approved and linked successfully!");
+ await loadRegistrations();
+}
+
+// REJECT
+async function rejectRegistration(registrationId){
+ if(!confirm("Are you sure you want to reject this request?"))return;
+
+ const {error}=await db.from("member_registrations")
+  .update({
+   status:"rejected",
+   reviewed_at:new Date().toISOString(),
+   reviewed_by:currentUser.id
+  })
+  .eq("id",registrationId)
+  .eq("status","pending");
+
+ if(error){
+  alert("Reject error: "+error.message);
+  return;
+ }
+
+ alert("Registration rejected.");
+ await loadRegistrations();
+}
+
+// LOAD DASHBOARD
 async function loadDashboard(){
-  const {data:settings,error}=await db.from("app_settings")
-    .select("*").eq("id",1).single();
-  document.getElementById("settingsInfo").textContent=error
-    ?"Settings error: "+error.message
-    :"Active members: "+settings.total_members+
-     " | Slot duration: "+settings.slot_duration_minutes+
-     " minutes | Morning: "+settings.morning_start+
-     " | Evening: "+settings.evening_start;
+ const {data:settings,error}=await db.from("app_settings")
+  .select("*").eq("id",1).single();
 
-  await Promise.all([
-    loadSession("morning","morningSchedule"),
-    loadSession("evening","eveningSchedule")
-  ]);
+ document.getElementById("settingsInfo").textContent=error
+  ?"Settings error: "+error.message
+  :"Active members: "+settings.total_members+
+   " | Slot duration: "+settings.slot_duration_minutes+
+   " minutes | Morning: "+settings.morning_start+
+   " | Evening: "+settings.evening_start;
+
+ await Promise.all([
+  loadSession("morning","morningSchedule"),
+  loadSession("evening","eveningSchedule")
+ ]);
 }
 
+// LOAD SESSION
 async function loadSession(session,elementId){
-  const box=document.getElementById(elementId);
-  box.textContent="Loading...";
-  const today=getLocalDateISO();
+ const box=document.getElementById(elementId);
+ box.textContent="Loading...";
+ const today=getLocalDateISO();
 
-  const {data:draws,error}=await db.from("draws")
-    .select("id,session_type,draw_date,created_at")
-    .eq("draw_date",today)
-    .eq("session_type",session)
-    .order("created_at",{ascending:false})
-    .limit(1);
+ const {data:draws,error}=await db.from("draws")
+  .select("id,session_type,draw_date,created_at")
+  .eq("draw_date",today)
+  .eq("session_type",session)
+  .order("created_at",{ascending:false})
+  .limit(1);
 
-  if(error){box.textContent="Draw loading error: "+error.message;return;}
-  if(!draws || draws.length===0){
-    box.textContent="No schedule generated yet.";
-    return;
-  }
+ if(error){
+  box.textContent="Draw loading error: "+error.message;
+  return;
+ }
 
-  // Safety check: never display a draw belonging to the other session.
-  if(draws[0].session_type!==session){
-    box.textContent="Session mismatch. Please contact the administrator.";
-    return;
-  }
+ if(!draws||draws.length===0){
+  box.textContent="No schedule generated yet.";
+  return;
+ }
 
-  const {data:slots,error:slotError}=await db.from("draw_slots")
-    .select("position,start_time,end_time,member_id")
-    .eq("draw_id",draws[0].id)
-    .order("position");
+ if(draws[0].session_type!==session){
+  box.textContent="Session mismatch.";
+  return;
+ }
 
-  if(slotError){box.textContent=slotError.message;return;}
-  if(!slots || slots.length===0){
-    box.textContent="No slots found.";
-    return;
-  }
+ const {data:slots,error:slotError}=await db.from("draw_slots")
+  .select("position,start_time,end_time,member_id")
+  .eq("draw_id",draws[0].id)
+  .order("position");
 
-  const memberIds=[...new Set(slots.map(slot=>slot.member_id).filter(Boolean))];
-  if(memberIds.length===0){
-    box.textContent="No members linked to these slots.";
-    return;
-  }
+ if(slotError){
+  box.textContent=slotError.message;
+  return;
+ }
 
-  const {data:members,error:memberError}=await db.from("members")
-    .select("id,name")
-    .in("id",memberIds);
+ if(!slots||slots.length===0){
+  box.textContent="No slots found.";
+  return;
+ }
 
-  if(memberError){box.textContent="Member loading error: "+memberError.message;return;}
+ const memberIds=[...new Set(slots.map(s=>s.member_id).filter(Boolean))];
 
-  const memberMap={};
-  (members || []).forEach(member=>{
-    memberMap[member.id]=member.name;
-  });
+ const {data:members,error:memberError}=await db.from("members")
+  .select("id,name")
+  .in("id",memberIds);
 
-  box.innerHTML="";
-  slots.forEach(slot=>{
-    const item=document.createElement("div");
-    item.className="slot";
-    const title=document.createElement("strong");
-    title.textContent="Slot "+slot.position;
-    const details=document.createElement("div");
-    details.textContent=(memberMap[slot.member_id] || "Member not found")+
-      " | "+slot.start_time+" - "+slot.end_time;
-    item.appendChild(title);
-    item.appendChild(details);
-    box.appendChild(item);
-  });
+ if(memberError){
+  box.textContent="Member loading error: "+memberError.message;
+  return;
+ }
+
+ const memberMap={};
+ (members||[]).forEach(m=>memberMap[m.id]=m.name);
+
+ box.innerHTML="";
+
+ slots.forEach(slot=>{
+  const item=document.createElement("div");
+  item.className="slot";
+
+  const title=document.createElement("strong");
+  title.textContent="Slot "+slot.position;
+
+  const details=document.createElement("div");
+  details.textContent=
+   (memberMap[slot.member_id]||"Member not found")+
+   " | "+slot.start_time+" - "+slot.end_time;
+
+  item.appendChild(title);
+  item.appendChild(details);
+  box.appendChild(item);
+ });
 }
 
+// LOTTERY
 async function generateLottery(session){
-  const message=document.getElementById("adminMessage");
-  const morningButton=document.getElementById("morningGenerateButton");
-  const eveningButton=document.getElementById("eveningGenerateButton");
-  const button=session==="morning"?morningButton:eveningButton;
+ if(!currentIsAdmin)return;
 
-  message.textContent="Generating "+session+" lottery...";
-  button.disabled=true;
+ const message=document.getElementById("adminMessage");
+ const morningButton=document.getElementById("morningGenerateButton");
+ const eveningButton=document.getElementById("eveningGenerateButton");
+ const button=session==="morning"?morningButton:eveningButton;
 
-  try{
-    const {error}=await db.rpc("generate_lottery",{
-      p_session:session,
-      p_draw_date:getLocalDateISO()
-    });
+ message.textContent="Generating "+session+" lottery...";
+ button.disabled=true;
 
-    if(error){
-      message.textContent="Error: "+error.message;
-      return;
-    }
+ try{
+  const {error}=await db.rpc("generate_lottery",{
+   p_session:session,
+   p_draw_date:getLocalDateISO()
+  });
 
-    message.textContent=session+" lottery generated successfully!";
-
-    // Refresh ONLY the session that was just generated.
-    // The other session and its previous schedule are left untouched.
-    if(session==="morning"){
-      await loadSession("morning","morningSchedule");
-    }else if(session==="evening"){
-      await loadSession("evening","eveningSchedule");
-    }
-  }catch(err){
-    message.textContent="Error: "+(err.message || String(err));
-  }finally{
-    button.disabled=false;
+  if(error){
+   message.textContent="Error: "+error.message;
+   return;
   }
+
+  message.textContent=session+" lottery generated successfully!";
+  await loadSession(session,session+"Schedule");
+
+ }catch(err){
+  message.textContent="Error: "+err.message;
+ }finally{
+  button.disabled=false;
+ }
 }
 
-async function checkLogin(){
-  const {data}=await db.auth.getSession();
-  if(data.session) await showDashboard(data.session.user);
-}
-checkLogin();
-</script>
-</body>
-</html>
+// LOGOUT
+async function logout(){
+ await db.auth.signOut();
+ currentUser=null;
+ currentIsAdmi
