@@ -108,42 +108,52 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <button class="logout danger" onclick="logout()">Logout</button>
 </div>
 
-<!-- DASHBOARD -->
+ <!-- DASHBOARD -->
 <div id="dashboard" class="hidden">
- <!-- MEMBER PROFILE CARD -->
-<div id="memberProfileCard" class="card hidden">
-  <div style="text-align:center;">
-    <img
-      id="memberProfilePhoto"
-      src=""
-      alt="Profile Photo"
-      style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #2563eb;"
-    >
 
-    <h2 id="memberProfileName" style="margin-top:12px;">Member Name</h2>
+  <!-- MEMBER PROFILE CARD -->
+  <div id="memberProfileCard" class="card hidden">
+
+    <div style="text-align:center;">
+      <img
+        id="memberProfilePhoto"
+        src=""
+        alt="Profile Photo"
+        style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #2563eb;"
+      >
+
+      <h2 id="memberProfileName" style="margin-top:12px;">
+        Member Name
+      </h2>
+    </div>
+
+    <hr style="margin:15px 0;">
+
+    <p>
+      <strong>Member Number:</strong>
+      <span id="memberProfileNumber">-</span>
+    </p>
+
+    <p style="margin-top:10px;">
+      <strong>Room Number:</strong>
+      <span id="memberProfileRoom">-</span>
+    </p>
+
+    <p style="margin-top:10px;">
+      <strong>Gmail:</strong>
+      <span id="memberProfileEmail">-</span>
+    </p>
+
   </div>
 
-  <hr style="margin:15px 0;">
+  <!-- MAIN DASHBOARD CARD -->
+  <div class="card">
+    <h2>Dashboard</h2>
+    <p id="welcome" class="muted"></p>
+    <p id="role" class="status"></p>
+    <button class="danger" onclick="logout()">Logout</button>
+  </div>
 
-  <p><strong>Room Number:</strong>
-   <p style="margin-top:10px;">
-  <strong>Member Number:</strong>
-  <span id="memberProfileNumber">-</span>
-</p>
-    <span id="memberProfileRoom">-</span>
-  </p>
-
-  <p style="margin-top:10px;">
-    <strong>Gmail:</strong>
-    <span id="memberProfileEmail">-</span>
-  </p>
-</div>
-
-<div class="card">
-<h2>Dashboard</h2>
-<p id="welcome" class="muted"></p>
-<p id="role" class="status"></p>
-<button class="danger" onclick="logout()">Logout</button>
 </div>
 
 <!-- ADMIN -->
