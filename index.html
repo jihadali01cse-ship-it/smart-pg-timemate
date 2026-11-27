@@ -559,6 +559,67 @@ async function rejectRegistration(registrationId){
  alert("Registration rejected.");
  await loadRegistrations();
 }
+ // LOAD APPROVED MEMBERS (ADMIN ONLY)
+async function loadApprovedMembers(){
+ if(!currentIsAdmin)return;
+
+ const box=document.getElementById("approvedMembersList");
+ box.textContent="Loading approved members...";
+
+ const {data:rows,error}=await db.from("member_registrations")
+  .select("id,full_name,email,mobile_number,room_number,photo_url,status")
+  .eq("status","approved")
+  .order("created_at",{ascending:true});
+
+ if(error){
+  box.textContent="Error: "+error.message;
+  return;
+ }
+
+ if(!rows||rows.length===0){
+  box.textContent="No approved members found.";
+  return;
+ }
+
+ box.innerHTML="";
+
+ for(const member of rows){
+  const card=document.createElement("div");
+  card.className="regItem";
+  card.style.marginBottom="15px";
+
+  if(member.photo_url){
+   const {data:signed,error:signedError}=await db.storage
+    .from("member-photos")
+    .createSignedUrl(member.photo_url,3600);
+
+   if(!signedError&&signed?.signedUrl){
+    const img=document.createElement("img");
+    img.src=signed.signedUrl;
+    img.alt="Member Photo";
+    img.className="photo";
+    card.appendChild(img);
+   }
+  }
+
+  const name=document.createElement("h3");
+  name.textContent=member.full_name||"Name not available";
+  card.appendChild(name);
+
+  const details=document.createElement("p");
+  details.className="muted";
+  details.textContent=
+   "Gmail: "+(member.email||"Not available")+
+   "\nMobile: "+(member.mobile_number||"Not provided")+
+   "\nRoom: "+(member.room_number||"Not provided")+
+   "\nApproval Status: "+member.status.toUpperCase();
+
+  details.style.whiteSpace="pre-line";
+  card.appendChild(details);
+
+  box.appendChild(card);
+ }
+}
 
 // LOAD DASHBOARD
 async function loadDashboard(){
