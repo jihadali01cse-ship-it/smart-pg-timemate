@@ -417,6 +417,17 @@ async function showDashboard(user){
  document.getElementById("dashboard").classList.remove("hidden");
  document.getElementById("role").textContent="Account Type: Member";
  document.getElementById("adminPanel").classList.add("hidden");
+ // GET MEMBER NUMBER
+ const {data:memberRecord,error:memberRecordError}=await db
+  .from("members")
+  .select("member_number")
+  .eq("user_id",user.id)
+  .maybeSingle();
+
+ document.getElementById("memberProfileNumber").textContent=
+  (!memberRecordError && memberRecord?.member_number)
+   ? "Member "+memberRecord.member_number
+   : "Not assigned";
 
  // MEMBER PROFILE DETAILS
  document.getElementById("memberProfileCard").classList.remove("hidden");
