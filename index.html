@@ -671,40 +671,32 @@ async function generateLottery(session){
 async function logout(){
  await db.auth.signOut();
  currentUser=null;
- currentIsAdmin=false;
-
- document.getElementById("adminPanel").classList.add("hidden");
- document.getElementById("photoUploadArea").classList.add("hidden");
-document.getElementById("loginMessage").textContent="";
-            showLogin();
+ currentIsAdmin = false;
+ hideAll();
+ showLogin();
+ document.getElementById("loginMessage").textContent = "You have been logged out.";
 }
-       //SESSION CHECK
-       async function checkLogin(){
-        const  {data,error}=await
-         db.auth.getSession();
-        if (error) return;
-        if(data.session) {
-         await showDashboard(data.session.user);
-        }
-       }
 
-      check Login();
+// CHECK EXISTING LOGIN SESSION
+async function checkLogin(){
+ const {data,error} = await db.auth.getSession();
+
+ if(error){
+  showLogin();
+  document.getElementById("loginMessage").textContent = error.message;
+  return;
+ }
+
+ if(data.session && data.session.user){
+  await showDashboard(data.session.user);
+ }else{
+  showLogin();
+ }
+}
+
+// START APPLICATION
+checkLogin();
+
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
-
- 
