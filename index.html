@@ -582,6 +582,41 @@ async function rejectRegistration(registrationId){
  alert("Registration rejected.");
  await loadRegistrations();
 }
+ // ADD NEW MEMBER
+async function addNewMember(){
+ if(!currentIsAdmin)return;
+
+ const nameInput=document.getElementById("newMemberName");
+ const roomInput=document.getElementById("newMemberRoom");
+ const message=document.getElementById("addMemberMessage");
+
+ const name=nameInput.value.trim();
+ const room=roomInput.value.trim();
+
+ if(!name){
+  message.textContent="Please enter member name.";
+  return;
+ }
+
+ message.textContent="Adding member...";
+
+ const {data,error}=await db.rpc("add_new_member",{
+  p_name:name,
+  p_room_number:room
+ });
+
+ if(error){
+  message.textContent="Error: "+error.message;
+  return;
+ }
+
+ message.textContent="Member "+data+" added successfully!";
+
+ nameInput.value="";
+ roomInput.value="";
+
+ await loadApprovedMembers();
+}
  // LOAD APPROVED MEMBERS (ADMIN ONLY)
 async function loadApprovedMembers(){
  if(!currentIsAdmin)return;
