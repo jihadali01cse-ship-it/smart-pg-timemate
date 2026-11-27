@@ -186,11 +186,17 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <div class="card" id="timeManagementSettings">
 
   <h2>Time Management Settings</h2>
-  <p class="muted">Configure Morning and Evening schedules</p>
+  <p class="muted">Manage session timing and scheduling</p>
 
-  <hr style="margin:15px 0;">
+  <hr>
 
   <h3>Morning Session</h3>
+
+  <label>Start Time</label>
+  <input type="time" id="morningStartTime" value="06:00">
+
+  <label>End Time</label>
+  <input type="time" id="morningEndTime" value="08:40">
 
   <label>Total Time (Minutes)</label>
   <input type="number" id="morningTotalMinutes"
@@ -203,9 +209,15 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
     <option value="manual">Manual Mode</option>
   </select>
 
-  <hr style="margin:15px 0;">
+  <hr>
 
   <h3>Evening Session</h3>
+
+  <label>Start Time</label>
+  <input type="time" id="eveningStartTime" value="18:00">
+
+  <label>End Time</label>
+  <input type="time" id="eveningEndTime" value="20:40">
 
   <label>Total Time (Minutes)</label>
   <input type="number" id="eveningTotalMinutes"
@@ -226,6 +238,7 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 
 </div>
 <!-- END TIME MANAGEMENT SETTINGS -->
+ 
 <button id="morningGenerateButton" onclick="generateLottery('morning')">Generate Morning Lottery</button>
 <button id="eveningGenerateButton" onclick="generateLottery('evening')">Generate Evening Lottery</button>
 <p class="status" id="adminMessage"></p>
