@@ -151,9 +151,46 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
     <h2>Dashboard</h2>
     <p id="welcome" class="muted"></p>
     <p id="role" class="status"></p>
-    <button class="danger" onclick="logout()">Logout</button>
+    <button class="danger"
+     onclick="logout()">Logout</button>
   </div>
+<!-- MEMBER CONTACT & MESSAGE SECTION -->
+  <div class="card" id="memberContactCard">
 
+    <h2>Contact Admin</h2>
+    <p class="muted">Send a message or complaint to Admin.</p>
+
+    <hr>
+
+    <label>Subject</label>
+    <select id="contactSubject">
+      <option value="General Enquiry">General Enquiry</option>
+      <option value="Complaint">Complaint</option>
+      <option value="Schedule Problem">Schedule Problem</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label>Your Message</label>
+    <textarea
+      id="contactMessage"
+      rows="4"
+      placeholder="Write your message here..."
+    ></textarea>
+
+    <button onclick="sendContactMessage()">
+      Send Message
+    </button>
+
+    <p id="contactMessageStatus" class="status"></p>
+
+    <hr>
+
+    <h3>My Messages & Replies</h3>
+    <div id="myContactMessages">
+      <p class="muted">Your messages will appear here.</p>
+    </div>
+
+  </div>
 </div>
 
 <!-- ADMIN -->
@@ -161,6 +198,19 @@ src="https://placehold.co/110x110/263750/ffffff?text=Photo">
 <h2>Admin Control Panel</h2>
 <p class="muted">Manage your PG schedule and members.</p>
  <hr>
+ <!-- ADMIN MESSAGE INBOX -->
+<div class="card" id="adminMessageInbox">
+
+  <h2>Member Messages</h2>
+  <p class="muted">View messages and reply to members.</p>
+
+  <hr>
+
+  <div id="adminContactMessages">
+    <p class="muted">Loading messages...</p>
+  </div>
+
+</div>
 <h3>Add New Member</h3>
 
 <input
@@ -414,7 +464,199 @@ async function updateNewPassword() {
   document.getElementById("loginMessage").textContent =
     "Password changed successfully. Please login.";
 }
+ // SEND CONTACT MESSAGE
+async function sendContactMessage() {
+  const subject = document.getElementById("contactSubject").value;
+  const message = document.getElementById("contactMessage").value.trim();
+  const status = document.getElementById("contactMessageStatus");
 
+  if (!message) {
+    status.textContent = "Please write a message.";
+    return;
+  }
+
+  status.textContent = "Sending message...";
+
+  const { error } = await db
+    .from("contact_messages")
+    .insert({
+      sender_id: currentUser.id,
+      subject: subject,
+      message: message
+    });
+
+  if (error) {
+    status.textContent = "Error: " + error.message;
+    return;
+  }
+
+  document.getElementById("contactMessage").value = "";
+  status.textContent = "Message sent successfully!";
+
+  await loadMyContactMessages();
+}
+
+
+// LOAD MEMBER MESSAGES AND ADMIN REPLIES
+async function loadMyContactMessages() {
+  const container = document.getElementById("myContactMessages");
+
+  const { data, error } = await db
+    .from("contact_messages")
+    .select("subject, message, status, admin_reply, created_at")
+    .eq("sender_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    container.textContent = "Could not load messages.";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    container.textContent = "No messages yet.";
+    return;
+  }
+
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const subject = document.createElement("h3");
+    subject.textContent = item.subject;
+
+    const message = document.createElement("p");
+    message.textContent = "Your Message: " + item.message;
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + item.status;
+
+    card.append(subject, message, status);
+
+    if (item.admin_reply) {
+      const reply = document.createElement("p");
+      reply.textContent = "Admin Reply: " + item.admin_reply;
+      card.appendChild(reply);
+    }
+
+    container.appendChild(card);
+  });
+}
+// LOAD ALL MEMBER MESSAGES - ADMIN
+async function loadAdminContactMessages() {
+  if (!currentIsAdmin) return;
+
+  const box = document.getElementById("adminContactMessages");
+  box.textContent = "Loading messages...";
+
+  const { data: messages, error } = await db
+    .from("contact_messages")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    box.textContent = "Error: " + error.message;
+    return;
+  }
+
+  if (!messages || messages.length === 0) {
+    box.textContent = "No messages received yet.";
+    return;
+  }
+
+  const userIds = [...new Set(messages.map(m => m.sender_id))];
+
+  const { data: registrations, error: regError } = await db
+    .from("member_registrations")
+    .select("user_id, full_name, room_number")
+    .in("user_id", userIds);
+
+  if (regError) {
+    box.textContent = "Member details error: " + regError.message;
+    return;
+  }
+
+  const memberMap = {};
+  (registrations || []).forEach(r => {
+    memberMap[r.user_id] = r;
+  });
+
+  box.innerHTML = "";
+
+  messages.forEach(item => {
+    const member = memberMap[item.sender_id] || {};
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const heading = document.createElement("h3");
+    heading.textContent = member.full_name || "Member";
+
+    const room = document.createElement("p");
+    room.textContent = "Room: " + (member.room_number || "Not available");
+
+    const subject = document.createElement("p");
+    subject.textContent = "Subject: " + item.subject;
+
+    const message = document.createElement("p");
+    message.textContent = "Message: " + item.message;
+
+    const status = document.createElement("p");
+    status.textContent = "Status: " + item.status;
+
+    card.append(heading, room, subject, message, status);
+
+    if (item.admin_reply) {
+      const reply = document.createElement("p");
+      reply.textContent = "Your Reply: " + item.admin_reply;
+      card.appendChild(reply);
+    }
+
+    const replyInput = document.createElement("textarea");
+    replyInput.rows = 3;
+    replyInput.placeholder = "Write your reply...";
+    replyInput.value = item.admin_reply || "";
+
+    const replyButton = document.createElement("button");
+    replyButton.textContent = "Send Reply";
+    replyButton.onclick = () =>
+      replyToContactMessage(item.id, replyInput.value);
+
+    card.append(replyInput, replyButton);
+    box.appendChild(card);
+  });
+}
+
+
+// ADMIN REPLY
+async function replyToContactMessage(messageId, replyText) {
+  if (!currentIsAdmin) return;
+
+  const reply = replyText.trim();
+
+  if (!reply) {
+    alert("Please write a reply first.");
+    return;
+  }
+
+  const { error } = await db
+    .from("contact_messages")
+    .update({
+      admin_reply: reply,
+      status: "replied",
+      replied_at: new Date().toISOString()
+    })
+    .eq("id", messageId);
+
+  if (error) {
+    alert("Reply error: " + error.message);
+    return;
+  }
+
+  alert("Reply sent successfully!");
+  await loadAdminContactMessages();
+}
 // LOGIN
 async function login(){
  const email=document.getElementById("loginEmail").value.trim();
@@ -487,6 +729,7 @@ async function showDashboard(user){
   "Logged in as: "+user.email;
 
  document.getElementById("memberProfileCard").classList.add("hidden");
+ document.getElementById("memberContactCard").classList.add("hidden");
 
  const {data:profile,error}=await db.from("profiles")
   .select("is_admin").eq("id",user.id).single();
@@ -503,8 +746,10 @@ async function showDashboard(user){
  if(currentIsAdmin){
   document.getElementById("dashboard").classList.remove("hidden");
   document.getElementById("role").textContent="Account Type: Administrator";
+  document.getElementById("memberContactCard").classList.remove("hidden");
   document.getElementById("adminPanel").classList.remove("hidden");
   await loadDashboard();
+  await loadMyContactMessages();
   await loadRegistrations();
   await loadApprovedMembers();
   return;
