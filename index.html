@@ -374,6 +374,46 @@ async function registerMember(){
  document.getElementById("regPassword").value="";
  document.getElementById("regConfirmPassword").value="";
 }
+ // UPDATE NEW PASSWORD
+async function updateNewPassword() {
+  const password = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmNewPassword").value;
+  const message = document.getElementById("passwordUpdateMessage");
+
+  if (password.length < 6) {
+    message.textContent = "Password must be at least 6 characters.";
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    message.textContent = "Passwords do not match.";
+    return;
+  }
+
+  message.textContent = "Updating password...";
+
+  const { error } = await db.auth.updateUser({
+    password: password
+  });
+
+  if (error) {
+    message.textContent = "Update error: " + error.message;
+    return;
+  }
+
+  message.textContent = "Password updated successfully!";
+
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmNewPassword").value = "";
+
+  await db.auth.signOut();
+
+  window.location.hash = "";
+  showLogin();
+
+  document.getElementById("loginMessage").textContent =
+    "Password changed successfully. Please login.";
+}
 
 // LOGIN
 async function login(){
@@ -419,6 +459,25 @@ async function forgotPassword() {
     message.textContent = "Error: " + err.message;
   }
 }
+ <!-- UPDATE PASSWORD -->
+<div class="card hidden" id="passwordUpdateBox">
+  <h2>Create New Password</h2>
+  <p class="muted">Enter your new password.</p>
+
+  <label>New Password</label>
+  <input type="password" id="newPassword"
+    placeholder="Enter new password">
+
+  <label>Confirm New Password</label>
+  <input type="password" id="confirmNewPassword"
+    placeholder="Confirm new password">
+
+  <button onclick="updateNewPassword()">
+    Update Password
+  </button>
+
+  <p class="status" id="passwordUpdateMessage"></p>
+</div>
  // DASHBOARD / ROLE CHECK
 async function showDashboard(user){
  currentUser=user;
@@ -1012,8 +1071,16 @@ async function logout(){
  document.getElementById("loginMessage").textContent = "You have been logged out.";
 }
 
-// CHECK EXISTING LOGIN SESSION
+ // CHECK EXISTING LOGIN SESSION
 async function checkLogin(){
+
+ if (window.location.hash.includes("type=recovery")) {
+  hideAll();
+  document.getElementById("passwordUpdateBox")
+    .classList.remove("hidden");
+  return;
+ }
+
  const {data,error} = await db.auth.getSession();
 
  if(error){
@@ -1028,7 +1095,14 @@ async function checkLogin(){
   showLogin();
  }
 }
-
+ // PASSWORD RECOVERY LISTENER
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY" && session) {
+    hideAll();
+    document.getElementById("passwordUpdateBox")
+      .classList.remove("hidden");
+  }
+});
 // START APPLICATION
 checkLogin();
 
